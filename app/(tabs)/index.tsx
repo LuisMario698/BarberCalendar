@@ -4,7 +4,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useResponsive } from '@/hooks/use-responsive';
 import { router } from 'expo-router';
 import React from 'react';
-import { ImageBackground, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, ImageBackground, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { useAppointments } from '@/context/AppointmentContext';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -169,15 +169,16 @@ export default function HomeScreen() {
           </View>
 
           {filteredAppointments.length > 0 ? (
-            <ScrollView
+            <FlatList
+              data={filteredAppointments}
+              keyExtractor={(item) => String(item.id)}
               style={{ maxHeight: r.verticalScale(300) }}
               contentContainerStyle={[styles.appointmentsList, { gap: r.spacing.sm + 2 }]}
               showsVerticalScrollIndicator={true}
               nestedScrollEnabled={true}
-            >
-              {filteredAppointments.map((apt) => (
+              scrollEventThrottle={16}
+              renderItem={({ item: apt }) => (
                 <View
-                  key={apt.id}
                   style={[
                     styles.appointmentCard,
                     {
@@ -245,8 +246,8 @@ export default function HomeScreen() {
                     />
                   </TouchableOpacity>
                 </View>
-              ))}
-            </ScrollView>
+              )}
+            />
           ) : (
             <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border, padding: r.spacing.xxxl, borderRadius: r.radius.md + 2 }]}>
               <ThemedText style={[styles.emptyStateText, { color: colors.textMuted, fontSize: r.fontSm }]}>
