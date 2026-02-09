@@ -3,31 +3,52 @@ import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAppTheme } from '@/context/ThemeContext';
+import { useResponsive } from '@/hooks/use-responsive';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { colors } = useAppTheme();
+  const r = useResponsive();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: colors.tabIconSelected,
+        tabBarInactiveTintColor: colors.tabIconDefault,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+          height: r.tabBarHeight,
+          paddingTop: r.spacing.sm,
+          paddingBottom: r.verticalScale(28),
+        },
+        tabBarLabelStyle: {
+          fontSize: r.fontXs,
+          fontWeight: '500',
+        },
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Inicio',
+          tabBarIcon: ({ color }) => <IconSymbol size={r.iconLarge} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="calendar"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Calendario',
+          tabBarIcon: ({ color }) => <IconSymbol size={r.iconLarge} name="calendar" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="revenue"
+        options={{
+          title: 'Ganancias',
+          tabBarIcon: ({ color }) => <IconSymbol size={r.iconLarge} name="chart.bar.fill" color={color} />,
         }}
       />
     </Tabs>
