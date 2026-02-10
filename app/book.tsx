@@ -5,7 +5,7 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useResponsive } from '@/hooks/use-responsive';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 const services = [
     { id: 1, name: 'Corte Adulto', price: 250 },
@@ -24,6 +24,9 @@ const timeSlots = [
     { time: '03:00', period: 'PM' },
     { time: '04:00', period: 'PM' },
     { time: '05:00', period: 'PM' },
+    { time: '06:00', period: 'PM' },
+    { time: '07:00', period: 'PM' },
+    { time: '08:00', period: 'PM' },
 ];
 
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -43,7 +46,7 @@ export default function BookScreen() {
 
         const service = services.find(s => s.id === selectedService);
 
-        addAppointment({
+        const success = addAppointment({
             date: selectedDay,
             time: selectedTime.time,
             period: selectedTime.period as 'AM' | 'PM',
@@ -51,14 +54,18 @@ export default function BookScreen() {
             service: service?.name || 'Servicio',
         });
 
-        router.push('/(tabs)');
+        if (success) {
+            router.push('/(tabs)');
+        } else {
+            Alert.alert('Error', 'Ya existe una cita programada para este horario.');
+        }
     };
 
     const isValid = selectedService && selectedTime;
 
     // Calculate widths for grids
     const serviceCardWidth = (r.screenWidth - (r.screenPadding * 2) - r.spacing.sm - 2) / 2;
-    const timeSlotWidth = (r.screenWidth - (r.screenPadding * 2) - (r.spacing.sm * 2)) / 3;
+    const timeSlotWidth = (r.screenWidth - (r.screenPadding * 2) - ((r.spacing.sm + 2) * 2)) / 3;
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -182,12 +189,17 @@ export default function BookScreen() {
                     <ThemedText style={[styles.sectionTitle, { color: colors.text, fontSize: r.fontSm }]}>
                         HORA
                     </ThemedText>
+
+                    {/* Morning Slots */}
+                    <ThemedText style={[styles.subsectionTitle, { color: colors.text, fontSize: r.fontXs, fontWeight: '600', opacity: 0.7 }]}>
+                        MAÑANA
+                    </ThemedText>
                     <View style={[styles.timesGrid, { gap: r.spacing.sm + 2 }]}>
-                        {timeSlots.map((slot, index) => {
+                        {timeSlots.filter(s => s.period === 'AM').map((slot, index) => {
                             const isSelected = selectedTime?.time === slot.time;
                             return (
                                 <TouchableOpacity
-                                    key={index}
+                                    key={`am-${index}`}
                                     style={[
                                         styles.timeSlot,
                                         {
@@ -211,6 +223,41 @@ export default function BookScreen() {
                             );
                         })}
                     </View>
+
+                    {/* Afternoon Slots */}
+                    <ThemedText style={[styles.subsectionTitle, { color: colors.text, fontSize: r.fontXs, fontWeight: '600', opacity: 0.7, marginTop: r.spacing.sm }]}>
+                        TARDE
+                    </ThemedText>
+                    <View style={[styles.timesGrid, { gap: r.spacing.sm + 2 }]}>
+                        {timeSlots.filter(s => s.period === 'PM').map((slot, index) => {
+                            const isSelected = selectedTime?.time === slot.time;
+                            return (
+                                <TouchableOpacity
+                                    key={`pm-${index}`}
+                                    style={[
+                                        styles.timeSlot,
+                                        {
+                                            width: timeSlotWidth,
+                                            backgroundColor: isSelected ? colors.tint : colors.surface,
+                                            borderColor: isSelected ? colors.tint : colors.border,
+                                            paddingVertical: r.spacing.md + 2,
+                                            borderRadius: r.radius.sm + 2,
+                                            gap: r.spacing.xs / 2,
+                                        }
+                                    ]}
+                                    onPress={() => setSelectedTime(slot)}
+                                >
+                                    <ThemedText style={[styles.timeText, { color: isSelected ? '#FFFFFF' : colors.text, fontSize: r.fontMd }]}>
+                                        {slot.time}
+                                    </ThemedText>
+                                    <ThemedText style={[styles.periodText, { color: isSelected ? 'rgba(255,255,255,0.8)' : colors.textSecondary, fontSize: r.fontXs }]}>
+                                        {slot.period}
+                                    </ThemedText>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+
                 </View>
             </ScrollView>
 
@@ -269,6 +316,11 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         letterSpacing: 0.5,
         lineHeight: 18,
+        includeFontPadding: false,
+    },
+    subsectionTitle: {
+        letterSpacing: 0.5,
+        lineHeight: 16,
         includeFontPadding: false,
     },
 
