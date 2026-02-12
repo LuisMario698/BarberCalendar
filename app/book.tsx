@@ -55,7 +55,7 @@ export default function BookScreen() {
         });
 
         if (success) {
-            router.push('/(tabs)');
+            router.back();
         } else {
             Alert.alert('Error', 'Ya existe una cita programada para este horario.');
         }
