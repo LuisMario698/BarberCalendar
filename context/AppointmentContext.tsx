@@ -1,21 +1,26 @@
 
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useFocusEffect } from 'expo-router';
+import React, { createContext, ReactNode, useCallback, useContext, useState } from 'react';
+import { Alert } from 'react-native';
 
 export type Appointment = {
     id: number;
     date: string; // "Lunes", "Martes", or "2025-05-19" format eventually
     time: string;
     period: 'AM' | 'PM';
-    client: string;
-    service: string;
+    client: string; // This corresponds to 'client' (renamed in SQL from 'client_name' perhaps, or matched)
+    service: string; // This corresponds to 'service' (renamed in SQL from 'service_name')
     status: 'pending' | 'completed';
 };
 
 interface AppointmentContextType {
     appointments: Appointment[];
-    addAppointment: (apt: Omit<Appointment, 'id' | 'status'>) => boolean;
-    toggleStatus: (id: number) => void;
+    isLoading: boolean;
+    addAppointment: (apt: Omit<Appointment, 'id' | 'status'>) => Promise<boolean>;
+    toggleStatus: (id: number) => Promise<void>;
     getAppointmentsByDay: (day: string) => Appointment[];
+    refreshAppointments: () => Promise<void>;
 }
 
 const AppointmentContext = createContext<AppointmentContextType | undefined>(undefined);
@@ -29,50 +34,109 @@ export const useAppointments = () => {
 };
 
 export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
-    // Initial seed data
-    const [appointments, setAppointments] = useState<Appointment[]>([
-        { id: 1, date: 'Lunes', time: '10:00', period: 'AM', client: 'Juan Perez', service: 'Corte Adulto', status: 'pending' },
-        { id: 2, date: 'Lunes', time: '11:00', period: 'AM', client: 'Maria Lopez', service: 'Corte Niño', status: 'completed' },
-        { id: 3, date: 'Lunes', time: '01:00', period: 'PM', client: 'Carlos Ruiz', service: 'Barba', status: 'pending' },
-        { id: 4, date: 'Martes', time: '09:00', period: 'AM', client: 'Pedro Paco', service: 'Corte + Barba', status: 'pending' },
-    ]);
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const addAppointment = (apt: Omit<Appointment, 'id' | 'status'>) => {
+    const refreshAppointments = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const { data, error } = await supabase
+                .from('appointments')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                throw error;
+            }
+
+            if (data) {
+                // Transform data if needed, but assuming direct match for now
+                // Note: Ensure your Supabase table columns match these keys:
+                // date, time, period, client, service, status, id
+                setAppointments(data as Appointment[]);
+            }
+        } catch (error) {
+            console.error('Error fetching appointments:', error);
+            // Optionally Alert.alert('Error', 'No se pudieron cargar las citas');
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // Initial load
+    useFocusEffect(
+        useCallback(() => {
+            refreshAppointments();
+        }, [refreshAppointments])
+    );
+
+    const addAppointment = async (apt: Omit<Appointment, 'id' | 'status'>): Promise<boolean> => {
+        // Check for duplicates locally first (optional optimization)
         const isDuplicate = appointments.some(a =>
             a.date === apt.date &&
             a.time === apt.time &&
             a.period === apt.period &&
-            a.status !== 'completed' // Optional: allow re-booking if previous was completed/cancelled? Adjust based on requirements. For now, strict no-overlap.
+            a.status !== 'completed'
         );
 
         if (isDuplicate) {
             return false;
         }
 
-        const newId = Math.max(...appointments.map(a => a.id), 0) + 1;
+        try {
+            const { error } = await supabase
+                .from('appointments')
+                .insert([{
+                    date: apt.date,
+                    time: apt.time,
+                    period: apt.period,
+                    client: apt.client,   // Ensure DB column is 'client' or map it
+                    service: apt.service, // Ensure DB column is 'service' or map it
+                    status: 'pending'
+                }]);
 
-        const newAppointment = { ...apt, id: newId, status: 'pending' as const };
+            if (error) {
+                console.error('Supabase insert error:', error);
+                throw error;
+            }
 
-        setAppointments(prev => {
-            const updated = [...prev, newAppointment];
-            // Sort by period (AM/PM) then time
-            return updated.sort((a, b) => {
-                const getMinutes = (time: string, period: string) => {
-                    let [hours, minutes] = time.split(':').map(Number);
-                    if (period === 'PM' && hours !== 12) hours += 12;
-                    if (period === 'AM' && hours === 12) hours = 0;
-                    return hours * 60 + minutes;
-                };
-                return getMinutes(a.time, a.period) - getMinutes(b.time, b.period);
-            });
-        });
-        return true;
+            await refreshAppointments();
+            return true;
+        } catch (error) {
+            console.error('Error adding appointment:', error);
+            return false;
+        }
     };
 
-    const toggleStatus = (id: number) => {
-        setAppointments(prev => prev.map(apt =>
-            apt.id === id ? { ...apt, status: apt.status === 'pending' ? 'completed' : 'pending' } : apt
+    const toggleStatus = async (id: number) => {
+        // Optimistic update
+        const apt = appointments.find(a => a.id === id);
+        if (!apt) return;
+
+        const newStatus = apt.status === 'pending' ? 'completed' : 'pending';
+
+        // Update local state immediately for UI responsiveness
+        setAppointments(prev => prev.map(a =>
+            a.id === id ? { ...a, status: newStatus } : a
         ));
+
+        try {
+            const { error } = await supabase
+                .from('appointments')
+                .update({ status: newStatus })
+                .eq('id', id);
+
+            if (error) {
+                throw error;
+            }
+        } catch (error) {
+            console.error('Error updating status:', error);
+            // Revert on error
+            setAppointments(prev => prev.map(a =>
+                a.id === id ? { ...a, status: apt.status } : a
+            ));
+            Alert.alert('Error', 'No se pudo actualizar el estado de la cita.');
+        }
     };
 
     const getAppointmentsByDay = (day: string) => {
@@ -80,7 +144,14 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <AppointmentContext.Provider value={{ appointments, addAppointment, toggleStatus, getAppointmentsByDay }}>
+        <AppointmentContext.Provider value={{
+            appointments,
+            isLoading,
+            addAppointment,
+            toggleStatus,
+            getAppointmentsByDay,
+            refreshAppointments
+        }}>
             {children}
         </AppointmentContext.Provider>
     );

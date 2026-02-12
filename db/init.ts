@@ -3,9 +3,9 @@ import * as SQLite from 'expo-sqlite';
 export const db = SQLite.openDatabaseSync('barber.db');
 
 export const initDatabase = () => {
-    try {
-        // Services Table
-        db.execSync(`
+  try {
+    // Services Table
+    db.execSync(`
       CREATE TABLE IF NOT EXISTS services (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -15,8 +15,8 @@ export const initDatabase = () => {
       );
     `);
 
-        // Weekly Schedule Table
-        db.execSync(`
+    // Weekly Schedule Table
+    db.execSync(`
       CREATE TABLE IF NOT EXISTS weekly_schedule (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         day_of_week INTEGER NOT NULL, -- 0=Sun, 1=Mon...
@@ -26,8 +26,8 @@ export const initDatabase = () => {
       );
     `);
 
-        // Appointments Table
-        db.execSync(`
+    // Appointments Table
+    db.execSync(`
       CREATE TABLE IF NOT EXISTS appointments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         service_id INTEGER NOT NULL,
@@ -38,42 +38,53 @@ export const initDatabase = () => {
       );
     `);
 
-        // Settings Table (for tracking current week)
-        db.execSync(`
+    // Settings Table (for tracking current week)
+    db.execSync(`
       CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
         value TEXT
       );
     `);
 
-        console.log('Database initialized successfully');
+    console.log('Database initialized successfully');
 
-        // Seed Data Check
-        const result = db.getAllSync('SELECT * FROM services');
-        if (result.length === 0) {
-            seedData();
-        }
+    // Seed Data Check
+    const result = db.getAllSync<{ name: string }>('SELECT name FROM services');
+    const hasNewServices = result.some(s => s.name === 'Corte Adulto');
 
-    } catch (error) {
-        console.error('Error initializing database:', error);
+    if (result.length === 0 || !hasNewServices) {
+      seedData();
     }
+
+  } catch (error) {
+    console.error('Error initializing database:', error);
+  }
 };
 
 const seedData = () => {
-    try {
-        db.runSync('INSERT INTO services (name, price, duration_minutes) VALUES (?, ?, ?)', ['Corte de Cabello', 25.00, 30]);
-        db.runSync('INSERT INTO services (name, price, duration_minutes) VALUES (?, ?, ?)', ['Barba', 15.00, 20]);
-        db.runSync('INSERT INTO services (name, price, duration_minutes) VALUES (?, ?, ?)', ['Corte y Barba', 35.00, 50]);
+  try {
+    // Clear existing services
+    db.runSync('DELETE FROM services');
 
-        // Default Schedule: Mon-Sat 9am-8pm
-        for (let i = 1; i <= 6; i++) {
-            db.runSync('INSERT INTO weekly_schedule (day_of_week, start_time, end_time, is_open) VALUES (?, ?, ?, ?)', [i, '09:00', '20:00', 1]);
-        }
-        // Sunday Closed
-        db.runSync('INSERT INTO weekly_schedule (day_of_week, start_time, end_time, is_open) VALUES (?, ?, ?, ?)', [0, '00:00', '00:00', 0]);
+    // Insert clean data
+    db.runSync('INSERT INTO services (name, price, duration_minutes) VALUES (?, ?, ?)', ['Corte Adulto', 250.00, 30]);
+    db.runSync('INSERT INTO services (name, price, duration_minutes) VALUES (?, ?, ?)', ['Corte Niño', 150.00, 20]);
+    db.runSync('INSERT INTO services (name, price, duration_minutes) VALUES (?, ?, ?)', ['Barba', 150.00, 20]);
+    db.runSync('INSERT INTO services (name, price, duration_minutes) VALUES (?, ?, ?)', ['Corte + Barba', 350.00, 50]);
 
-        console.log('Seed data inserted');
-    } catch (error) {
-        console.error('Error seeding data:', error);
+    // Default Schedule: Mon-Sat 9am-8pm
+    // Check if schedule exists before inserting
+    const schedule = db.getAllSync('SELECT * FROM weekly_schedule');
+    if (schedule.length === 0) {
+      for (let i = 1; i <= 6; i++) {
+        db.runSync('INSERT INTO weekly_schedule (day_of_week, start_time, end_time, is_open) VALUES (?, ?, ?, ?)', [i, '09:00', '20:00', 1]);
+      }
+      // Sunday Closed
+      db.runSync('INSERT INTO weekly_schedule (day_of_week, start_time, end_time, is_open) VALUES (?, ?, ?, ?)', [0, '00:00', '00:00', 0]);
     }
+
+    console.log('Seed data inserted');
+  } catch (error) {
+    console.error('Error seeding data:', error);
+  }
 };

@@ -21,242 +21,238 @@ export default function HomeScreen() {
 
   const dates = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
+  const renderHeader = () => (
+    <View>
+      {/* Header */}
+      <View style={[styles.header, { marginBottom: r.spacing.xxl }]}>
+        <View>
+          <ThemedText style={[styles.greeting, { color: colors.textSecondary, fontSize: r.fontSm }]}>
+            Bienvenido
+          </ThemedText>
+          <ThemedText style={[styles.title, { color: colors.text, fontSize: r.fontXxl }]}>
+            ANDRES
+          </ThemedText>
+        </View>
+        <TouchableOpacity
+          style={[styles.addButton, { backgroundColor: colors.tint, width: r.moderateScale(44), height: r.moderateScale(44), borderRadius: r.radius.md }]}
+          onPress={() => router.push('/book')}
+        >
+          <IconSymbol name="plus" size={r.iconMedium} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Next Appointment Card */}
+      {nextAppointment ? (
+        <View
+          style={[
+            styles.featuredCard,
+            {
+              backgroundColor: '#000000',
+              borderColor: colors.tint,
+              borderWidth: 1,
+              borderRadius: r.radius.xl,
+              marginBottom: r.spacing.xxl,
+              height: r.verticalScale(250),
+              overflow: 'hidden',
+            }
+          ]}
+        >
+          {/* Logo Background */}
+          <ImageBackground
+            source={require('../../assets/logoBarber.png')}
+            style={styles.bannerBackground}
+            imageStyle={{ opacity: 0.85, resizeMode: 'cover' }}
+          >
+            {/* Gradient overlay for text readability */}
+            <View style={styles.bannerGradient}>
+              {/* Content */}
+              <View style={styles.bannerContent}>
+                <View style={styles.bannerTop}>
+                  <View style={[styles.statusBadge, { backgroundColor: colors.tint }]}>
+                    <ThemedText style={{ color: '#000000', fontSize: r.fontXs, fontWeight: '700' }}>
+                      PRÓXIMA CITA
+                    </ThemedText>
+                  </View>
+                </View>
+
+                <View style={styles.bannerBottom}>
+                  <View>
+                    <ThemedText style={[styles.bannerTime, { fontSize: r.moderateScale(36) }]}>
+                      {nextAppointment.time} {nextAppointment.period}
+                    </ThemedText>
+                    <ThemedText style={[styles.bannerClient, { fontSize: r.fontMd }]}>
+                      {nextAppointment.client}
+                    </ThemedText>
+                  </View>
+                  <View style={[styles.bannerService, { backgroundColor: 'rgba(201, 162, 39, 0.2)', paddingHorizontal: r.spacing.md, paddingVertical: r.spacing.sm, borderRadius: r.radius.sm, borderWidth: 1, borderColor: colors.tint }]}>
+                    <ThemedText style={{ color: colors.tint, fontSize: r.fontSm, fontWeight: '600' }}>
+                      {nextAppointment.service}
+                    </ThemedText>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </ImageBackground>
+        </View>
+      ) : (
+        <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border, padding: r.moderateScale(40), borderRadius: r.radius.xl, marginBottom: r.spacing.xxl }]}>
+          <IconSymbol name="calendar" size={r.iconXLarge} color={colors.textMuted} />
+          <ThemedText style={[styles.emptyText, { color: colors.textMuted, fontSize: r.fontMd }]}>
+            No hay citas pendientes
+          </ThemedText>
+        </View>
+      )}
+
+      {/* Day Selector */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[styles.daySelector, { gap: r.spacing.sm + 2 }]}
+        style={{ marginBottom: r.spacing.xxl }}
+      >
+        {dates.map((day) => {
+          const isSelected = selectedDate === day;
+          const dayCount = appointments.filter(a => a.date === day && a.status === 'pending').length;
+
+          return (
+            <TouchableOpacity
+              key={day}
+              style={[
+                styles.dayChip,
+                {
+                  backgroundColor: isSelected ? colors.tint : colors.surface,
+                  borderColor: isSelected ? colors.tint : colors.border,
+                  paddingHorizontal: r.spacing.lg,
+                  paddingVertical: r.spacing.sm + 2,
+                  borderRadius: r.radius.md,
+                }
+              ]}
+              onPress={() => setSelectedDate(day)}
+            >
+              <ThemedText style={[styles.dayText, { color: isSelected ? '#FFFFFF' : colors.text, fontSize: r.fontSm }]}>
+                {day.slice(0, 3)}
+              </ThemedText>
+              {dayCount > 0 && (
+                <View style={[
+                  styles.dayBadge,
+                  {
+                    backgroundColor: isSelected ? 'rgba(255,255,255,0.25)' : colors.tintMuted,
+                    paddingHorizontal: r.spacing.xs + 2,
+                    paddingVertical: r.spacing.xs / 2,
+                    borderRadius: r.spacing.sm - 2,
+                  }
+                ]}>
+                  <ThemedText style={[styles.dayBadgeText, { color: isSelected ? '#FFFFFF' : colors.tint, fontSize: r.fontXs }]}>
+                    {dayCount}
+                  </ThemedText>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
+      {/* Appointments Section Header */}
+      <View style={[styles.sectionHeader, { marginBottom: r.spacing.lg }]}>
+        <ThemedText style={[styles.sectionTitle, { color: colors.text, fontSize: r.fontLg }]}>
+          Citas del {selectedDate}
+        </ThemedText>
+        <ThemedText style={[styles.sectionCount, { color: colors.textMuted, fontSize: r.fontSm }]}>
+          {filteredAppointments.length} {filteredAppointments.length === 1 ? 'cita' : 'citas'}
+        </ThemedText>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { padding: r.screenPadding }]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={[styles.header, { marginBottom: r.spacing.xxl }]}>
-          <View>
-            <ThemedText style={[styles.greeting, { color: colors.textSecondary, fontSize: r.fontSm }]}>
-              Bienvenido
-            </ThemedText>
-            <ThemedText style={[styles.title, { color: colors.text, fontSize: r.fontXxl }]}>
-              ANDRES
+      <FlatList
+        data={filteredAppointments}
+        keyExtractor={(item) => String(item.id)}
+        ListHeaderComponent={renderHeader}
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.appointmentsList, { padding: r.screenPadding, gap: r.spacing.sm + 2, paddingBottom: 100 }]}
+        showsVerticalScrollIndicator={true}
+        ListEmptyComponent={
+          <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border, padding: r.spacing.xxxl, borderRadius: r.radius.md + 2 }]}>
+            <ThemedText style={[styles.emptyStateText, { color: colors.textMuted, fontSize: r.fontSm }]}>
+              Sin citas para este día
             </ThemedText>
           </View>
-          <TouchableOpacity
-            style={[styles.addButton, { backgroundColor: colors.tint, width: r.moderateScale(44), height: r.moderateScale(44), borderRadius: r.radius.md }]}
-            onPress={() => router.push('/book')}
-          >
-            <IconSymbol name="plus" size={r.iconMedium} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Next Appointment Card */}
-        {nextAppointment ? (
+        }
+        renderItem={({ item: apt }) => (
           <View
             style={[
-              styles.featuredCard,
+              styles.appointmentCard,
               {
-                backgroundColor: '#000000',
-                borderColor: colors.tint,
-                borderWidth: 1,
-                borderRadius: r.radius.xl,
-                marginBottom: r.spacing.xxl,
-                height: r.verticalScale(250),
-                overflow: 'hidden',
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                opacity: apt.status === 'completed' ? 0.6 : 1,
+                padding: r.spacing.md + 2,
+                borderRadius: r.radius.md + 2,
+                gap: r.spacing.md + 2,
               }
             ]}
           >
-            {/* Logo Background */}
-            <ImageBackground
-              source={require('../../assets/logoBarber.png')}
-              style={styles.bannerBackground}
-              imageStyle={{ opacity: 0.85, resizeMode: 'cover' }}
-            >
-              {/* Gradient overlay for text readability */}
-              <View style={styles.bannerGradient}>
-                {/* Content */}
-                <View style={styles.bannerContent}>
-                  <View style={styles.bannerTop}>
-                    <View style={[styles.statusBadge, { backgroundColor: colors.tint }]}>
-                      <ThemedText style={{ color: '#000000', fontSize: r.fontXs, fontWeight: '700' }}>
-                        PRÓXIMA CITA
-                      </ThemedText>
-                    </View>
-                  </View>
-
-                  <View style={styles.bannerBottom}>
-                    <View>
-                      <ThemedText style={[styles.bannerTime, { fontSize: r.moderateScale(36) }]}>
-                        {nextAppointment.time} {nextAppointment.period}
-                      </ThemedText>
-                      <ThemedText style={[styles.bannerClient, { fontSize: r.fontMd }]}>
-                        {nextAppointment.client}
-                      </ThemedText>
-                    </View>
-                    <View style={[styles.bannerService, { backgroundColor: 'rgba(201, 162, 39, 0.2)', paddingHorizontal: r.spacing.md, paddingVertical: r.spacing.sm, borderRadius: r.radius.sm, borderWidth: 1, borderColor: colors.tint }]}>
-                      <ThemedText style={{ color: colors.tint, fontSize: r.fontSm, fontWeight: '600' }}>
-                        {nextAppointment.service}
-                      </ThemedText>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </ImageBackground>
-          </View>
-        ) : (
-          <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border, padding: r.moderateScale(40), borderRadius: r.radius.xl, marginBottom: r.spacing.xxl }]}>
-            <IconSymbol name="calendar" size={r.iconXLarge} color={colors.textMuted} />
-            <ThemedText style={[styles.emptyText, { color: colors.textMuted, fontSize: r.fontMd }]}>
-              No hay citas pendientes
-            </ThemedText>
-          </View>
-        )}
-
-        {/* Day Selector */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[styles.daySelector, { gap: r.spacing.sm + 2, marginBottom: r.spacing.xxl }]}
-        >
-          {dates.map((day) => {
-            const isSelected = selectedDate === day;
-            const dayCount = appointments.filter(a => a.date === day && a.status === 'pending').length;
-
-            return (
-              <TouchableOpacity
-                key={day}
-                style={[
-                  styles.dayChip,
-                  {
-                    backgroundColor: isSelected ? colors.tint : colors.surface,
-                    borderColor: isSelected ? colors.tint : colors.border,
-                    paddingHorizontal: r.spacing.lg,
-                    paddingVertical: r.spacing.sm + 2,
-                    borderRadius: r.radius.md,
-                  }
-                ]}
-                onPress={() => setSelectedDate(day)}
-              >
-                <ThemedText style={[styles.dayText, { color: isSelected ? '#FFFFFF' : colors.text, fontSize: r.fontSm }]}>
-                  {day.slice(0, 3)}
-                </ThemedText>
-                {dayCount > 0 && (
-                  <View style={[
-                    styles.dayBadge,
-                    {
-                      backgroundColor: isSelected ? 'rgba(255,255,255,0.25)' : colors.tintMuted,
-                      paddingHorizontal: r.spacing.xs + 2,
-                      paddingVertical: r.spacing.xs / 2,
-                      borderRadius: r.spacing.sm - 2,
-                    }
-                  ]}>
-                    <ThemedText style={[styles.dayBadgeText, { color: isSelected ? '#FFFFFF' : colors.tint, fontSize: r.fontXs }]}>
-                      {dayCount}
-                    </ThemedText>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {/* Appointments Section */}
-        <View style={[styles.section, { gap: r.spacing.lg }]}>
-          <View style={styles.sectionHeader}>
-            <ThemedText style={[styles.sectionTitle, { color: colors.text, fontSize: r.fontLg }]}>
-              Citas del {selectedDate}
-            </ThemedText>
-            <ThemedText style={[styles.sectionCount, { color: colors.textMuted, fontSize: r.fontSm }]}>
-              {filteredAppointments.length} {filteredAppointments.length === 1 ? 'cita' : 'citas'}
-            </ThemedText>
-          </View>
-
-          {filteredAppointments.length > 0 ? (
-            <FlatList
-              data={filteredAppointments}
-              keyExtractor={(item) => String(item.id)}
-              style={{ maxHeight: r.verticalScale(300) }}
-              contentContainerStyle={[styles.appointmentsList, { gap: r.spacing.sm + 2 }]}
-              showsVerticalScrollIndicator={true}
-              nestedScrollEnabled={true}
-              scrollEventThrottle={16}
-              renderItem={({ item: apt }) => (
-                <View
-                  style={[
-                    styles.appointmentCard,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                      opacity: apt.status === 'completed' ? 0.6 : 1,
-                      padding: r.spacing.md + 2,
-                      borderRadius: r.radius.md + 2,
-                      gap: r.spacing.md + 2,
-                    }
-                  ]}
-                >
-                  <View style={[
-                    styles.timeBlock,
-                    {
-                      backgroundColor: apt.status === 'completed' ? colors.success + '15' : colors.tintMuted,
-                      width: r.moderateScale(54),
-                      height: r.moderateScale(54),
-                      borderRadius: r.radius.md,
-                    }
-                  ]}>
-                    <ThemedText style={[styles.timeText, { color: apt.status === 'completed' ? colors.success : colors.tint, fontSize: r.fontMd }]}>
-                      {apt.time}
-                    </ThemedText>
-                    <ThemedText style={[styles.periodText, { color: apt.status === 'completed' ? colors.success : colors.tint, fontSize: r.fontXs - 1 }]}>
-                      {apt.period}
-                    </ThemedText>
-                  </View>
-
-                  <View style={styles.appointmentInfo}>
-                    <ThemedText
-                      style={[
-                        styles.clientName,
-                        {
-                          color: colors.text,
-                          textDecorationLine: apt.status === 'completed' ? 'line-through' : 'none',
-                          fontSize: r.fontMd,
-                        }
-                      ]}
-                    >
-                      {apt.client}
-                    </ThemedText>
-                    <ThemedText style={[styles.serviceName, { color: colors.textSecondary, fontSize: r.fontSm }]}>
-                      {apt.service}
-                    </ThemedText>
-                  </View>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      {
-                        backgroundColor: apt.status === 'pending' ? colors.tint : 'transparent',
-                        borderColor: apt.status === 'pending' ? colors.tint : colors.border,
-                        width: r.moderateScale(36),
-                        height: r.moderateScale(36),
-                        borderRadius: r.radius.sm + 2,
-                      }
-                    ]}
-                    onPress={() => toggleStatus(apt.id)}
-                  >
-                    <IconSymbol
-                      name={apt.status === 'pending' ? 'checkmark' : 'arrow.uturn.backward'}
-                      size={r.iconSmall - 2}
-                      color={apt.status === 'pending' ? '#FFFFFF' : colors.textSecondary}
-                    />
-                  </TouchableOpacity>
-                </View>
-              )}
-            />
-          ) : (
-            <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border, padding: r.spacing.xxxl, borderRadius: r.radius.md + 2 }]}>
-              <ThemedText style={[styles.emptyStateText, { color: colors.textMuted, fontSize: r.fontSm }]}>
-                Sin citas para este día
+            <View style={[
+              styles.timeBlock,
+              {
+                backgroundColor: apt.status === 'completed' ? colors.success + '15' : colors.tintMuted,
+                width: r.moderateScale(54),
+                height: r.moderateScale(54),
+                borderRadius: r.radius.md,
+              }
+            ]}>
+              <ThemedText style={[styles.timeText, { color: apt.status === 'completed' ? colors.success : colors.tint, fontSize: r.fontMd }]}>
+                {apt.time}
+              </ThemedText>
+              <ThemedText style={[styles.periodText, { color: apt.status === 'completed' ? colors.success : colors.tint, fontSize: r.fontXs - 1 }]}>
+                {apt.period}
               </ThemedText>
             </View>
-          )}
-        </View>
-      </ScrollView>
+
+            <View style={styles.appointmentInfo}>
+              <ThemedText
+                style={[
+                  styles.clientName,
+                  {
+                    color: colors.text,
+                    textDecorationLine: apt.status === 'completed' ? 'line-through' : 'none',
+                    fontSize: r.fontMd,
+                  }
+                ]}
+              >
+                {apt.client}
+              </ThemedText>
+              <ThemedText style={[styles.serviceName, { color: colors.textSecondary, fontSize: r.fontSm }]}>
+                {apt.service}
+              </ThemedText>
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                {
+                  backgroundColor: apt.status === 'pending' ? colors.tint : 'transparent',
+                  borderColor: apt.status === 'pending' ? colors.tint : colors.border,
+                  width: r.moderateScale(36),
+                  height: r.moderateScale(36),
+                  borderRadius: r.radius.sm + 2,
+                }
+              ]}
+              onPress={() => toggleStatus(apt.id)}
+            >
+              <IconSymbol
+                name={apt.status === 'pending' ? 'checkmark' : 'arrow.uturn.backward'}
+                size={r.iconSmall - 2}
+                color={apt.status === 'pending' ? '#FFFFFF' : colors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+      />
     </SafeAreaView>
   );
 }

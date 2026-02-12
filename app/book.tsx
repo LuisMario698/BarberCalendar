@@ -3,16 +3,12 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAppointments } from '@/context/AppointmentContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useResponsive } from '@/hooks/use-responsive';
+import { useServices } from '@/hooks/use-services';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
-const services = [
-    { id: 1, name: 'Corte Adulto', price: 250 },
-    { id: 2, name: 'Corte Niño', price: 150 },
-    { id: 3, name: 'Barba', price: 150 },
-    { id: 4, name: 'Corte + Barba', price: 350 },
-];
+
 
 const timeSlots = [
     { time: '09:00', period: 'AM' },
@@ -35,29 +31,35 @@ export default function BookScreen() {
     const { colors, isDark } = useAppTheme();
     const { addAppointment } = useAppointments();
     const r = useResponsive();
+    const { services } = useServices();
 
     const [selectedService, setSelectedService] = useState<number | null>(null);
     const [selectedDay, setSelectedDay] = useState<string>(days[0]);
     const [selectedTime, setSelectedTime] = useState<{ time: string; period: string } | null>(null);
     const [clientName, setClientName] = useState('');
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!selectedService || !selectedTime) return;
 
         const service = services.find(s => s.id === selectedService);
 
-        const success = addAppointment({
-            date: selectedDay,
-            time: selectedTime.time,
-            period: selectedTime.period as 'AM' | 'PM',
-            client: clientName.trim() || 'Cliente',
-            service: service?.name || 'Servicio',
-        });
+        try {
+            const success = await addAppointment({
+                date: selectedDay,
+                time: selectedTime.time,
+                period: selectedTime.period as 'AM' | 'PM',
+                client: clientName.trim() || 'Cliente',
+                service: service?.name || 'Servicio',
+            });
 
-        if (success) {
-            router.back();
-        } else {
-            Alert.alert('Error', 'Ya existe una cita programada para este horario.');
+            if (success) {
+                router.back();
+            } else {
+                Alert.alert('Error', 'Ya existe una cita programada para este horario.');
+            }
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Error', 'No se pudo guardar la cita.');
         }
     };
 
