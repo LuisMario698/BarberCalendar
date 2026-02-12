@@ -37,11 +37,17 @@ export default function BookScreen() {
     const [selectedDay, setSelectedDay] = useState<string>(days[0]);
     const [selectedTime, setSelectedTime] = useState<{ time: string; period: string } | null>(null);
     const [clientName, setClientName] = useState('');
+    const [serviceName, setServiceName] = useState('');
+    const [price, setPrice] = useState('');
+
+    const handleSelectService = (s: { id: number; name: string; price: number }) => {
+        setSelectedService(s.id);
+        setServiceName(s.name);
+        setPrice(s.price.toString());
+    };
 
     const handleSave = async () => {
         if (!selectedService || !selectedTime) return;
-
-        const service = services.find(s => s.id === selectedService);
 
         try {
             const success = await addAppointment({
@@ -49,7 +55,8 @@ export default function BookScreen() {
                 time: selectedTime.time,
                 period: selectedTime.period as 'AM' | 'PM',
                 client: clientName.trim() || 'Cliente',
-                service: service?.name || 'Servicio',
+                service: serviceName.trim() || 'Servicio',
+                price: parseFloat(price) || 0,
             });
 
             if (success) {
@@ -136,7 +143,7 @@ export default function BookScreen() {
                                             gap: r.spacing.xs,
                                         }
                                     ]}
-                                    onPress={() => setSelectedService(service.id)}
+                                    onPress={() => handleSelectService(service)}
                                 >
                                     <ThemedText style={[styles.serviceName, { color: isSelected ? '#FFFFFF' : colors.text, fontSize: r.fontMd }]}>
                                         {service.name}
@@ -148,6 +155,35 @@ export default function BookScreen() {
                             );
                         })}
                     </View>
+
+                    {selectedService && (
+                        <View style={{ marginTop: r.spacing.sm }}>
+                            <View style={{ gap: 4 }}>
+                                <ThemedText style={[styles.sectionTitle, { color: colors.textSecondary, fontSize: r.fontXs }]}>
+                                    PRECIO
+                                </ThemedText>
+                                <TextInput
+                                    style={[
+                                        styles.input,
+                                        {
+                                            backgroundColor: colors.surface,
+                                            borderColor: colors.border,
+                                            color: colors.text,
+                                            height: r.inputHeight,
+                                            borderRadius: r.radius.md,
+                                            paddingHorizontal: r.spacing.lg,
+                                            fontSize: r.fontMd,
+                                        }
+                                    ]}
+                                    value={price}
+                                    onChangeText={setPrice}
+                                    keyboardType="numeric"
+                                    placeholder="Precio"
+                                    placeholderTextColor={colors.textMuted}
+                                />
+                            </View>
+                        </View>
+                    )}
                 </View>
 
                 {/* Day Selection */}
@@ -283,7 +319,7 @@ export default function BookScreen() {
                     </ThemedText>
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 }
 

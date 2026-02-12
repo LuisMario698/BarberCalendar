@@ -10,7 +10,8 @@ export type Appointment = {
     time: string;
     period: 'AM' | 'PM';
     client: string; // This corresponds to 'client' (renamed in SQL from 'client_name' perhaps, or matched)
-    service: string; // This corresponds to 'service' (renamed in SQL from 'service_name')
+    service: string;
+    price: number;
     status: 'pending' | 'completed';
 };
 
@@ -19,6 +20,7 @@ interface AppointmentContextType {
     isLoading: boolean;
     addAppointment: (apt: Omit<Appointment, 'id' | 'status'>) => Promise<boolean>;
     toggleStatus: (id: number) => Promise<void>;
+    deleteAppointment: (id: number) => Promise<void>;
     getAppointmentsByDay: (day: string) => Appointment[];
     refreshAppointments: () => Promise<void>;
 }
@@ -90,8 +92,9 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
                     date: apt.date,
                     time: apt.time,
                     period: apt.period,
-                    client: apt.client,   // Ensure DB column is 'client' or map it
-                    service: apt.service, // Ensure DB column is 'service' or map it
+                    client: apt.client,
+                    service: apt.service,
+                    price: apt.price,
                     status: 'pending'
                 }]);
 
@@ -139,6 +142,28 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const deleteAppointment = async (id: number) => {
+        const apt = appointments.find(a => a.id === id);
+        if (!apt) return;
+
+        // Optimistic update
+        setAppointments(prev => prev.filter(a => a.id !== id));
+
+        try {
+            const { error } = await supabase
+                .from('appointments')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error deleting appointment:', error);
+            // Revert
+            setAppointments(prev => [...prev, apt]);
+            Alert.alert('Error', 'No se pudo eliminar la cita.');
+        }
+    };
+
     const getAppointmentsByDay = (day: string) => {
         return appointments.filter(apt => apt.date === day);
     };
@@ -149,6 +174,7 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
             isLoading,
             addAppointment,
             toggleStatus,
+            deleteAppointment,
             getAppointmentsByDay,
             refreshAppointments
         }}>

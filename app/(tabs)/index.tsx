@@ -4,7 +4,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useResponsive } from '@/hooks/use-responsive';
 import { router } from 'expo-router';
 import React from 'react';
-import { FlatList, ImageBackground, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, ImageBackground, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { useAppointments } from '@/context/AppointmentContext';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -12,7 +12,7 @@ import { useAppTheme } from '@/context/ThemeContext';
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const { colors, isDark } = useAppTheme();
-  const { appointments, toggleStatus } = useAppointments();
+  const { appointments, toggleStatus, deleteAppointment } = useAppointments();
   const [selectedDate, setSelectedDate] = React.useState('Lunes');
   const r = useResponsive();
 
@@ -168,12 +168,17 @@ export default function HomeScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
+      {/* Fixed Header Area */}
+      <View style={{ paddingHorizontal: r.screenPadding, paddingTop: r.screenPadding }}>
+        {renderHeader()}
+      </View>
+
+      {/* Scrollable Appointments Only */}
       <FlatList
         data={filteredAppointments}
         keyExtractor={(item) => String(item.id)}
-        ListHeaderComponent={renderHeader}
         style={{ flex: 1 }}
-        contentContainerStyle={[styles.appointmentsList, { padding: r.screenPadding, gap: r.spacing.sm + 2, paddingBottom: 100 }]}
+        contentContainerStyle={[styles.appointmentsList, { paddingHorizontal: r.screenPadding, gap: r.spacing.sm + 2, paddingBottom: 100 }]}
         showsVerticalScrollIndicator={true}
         ListEmptyComponent={
           <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border, padding: r.spacing.xxxl, borderRadius: r.radius.md + 2 }]}>
@@ -227,29 +232,63 @@ export default function HomeScreen() {
                 {apt.client}
               </ThemedText>
               <ThemedText style={[styles.serviceName, { color: colors.textSecondary, fontSize: r.fontSm }]}>
-                {apt.service}
+                {apt.service} • ${apt.price}
               </ThemedText>
             </View>
 
-            <TouchableOpacity
-              style={[
-                styles.actionButton,
-                {
-                  backgroundColor: apt.status === 'pending' ? colors.tint : 'transparent',
-                  borderColor: apt.status === 'pending' ? colors.tint : colors.border,
-                  width: r.moderateScale(36),
-                  height: r.moderateScale(36),
-                  borderRadius: r.radius.sm + 2,
-                }
-              ]}
-              onPress={() => toggleStatus(apt.id)}
-            >
-              <IconSymbol
-                name={apt.status === 'pending' ? 'checkmark' : 'arrow.uturn.backward'}
-                size={r.iconSmall - 2}
-                color={apt.status === 'pending' ? '#FFFFFF' : colors.textSecondary}
-              />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: r.spacing.sm, alignItems: 'center' }}>
+              {apt.status === 'pending' && (
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.error,
+                      borderWidth: 1,
+                      width: r.moderateScale(36),
+                      height: r.moderateScale(36),
+                      borderRadius: r.radius.sm + 2,
+                    }
+                  ]}
+                  onPress={() => {
+                    Alert.alert(
+                      'Eliminar Cita',
+                      '¿Estás seguro de que deseas eliminar esta cita permanentemente?',
+                      [
+                        { text: 'Cancelar', style: 'cancel' },
+                        {
+                          text: 'Eliminar',
+                          style: 'destructive',
+                          onPress: () => deleteAppointment(apt.id)
+                        }
+                      ]
+                    );
+                  }}
+                >
+                  <IconSymbol name="trash" size={r.iconSmall - 4} color={colors.error} />
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={[
+                  styles.actionButton,
+                  {
+                    backgroundColor: apt.status === 'pending' ? colors.tint : 'transparent',
+                    borderColor: apt.status === 'pending' ? colors.tint : colors.border,
+                    width: r.moderateScale(36),
+                    height: r.moderateScale(36),
+                    borderRadius: r.radius.sm + 2,
+                  }
+                ]}
+                onPress={() => toggleStatus(apt.id)}
+              >
+                <IconSymbol
+                  name={apt.status === 'pending' ? 'checkmark' : 'arrow.uturn.backward'}
+                  size={r.iconSmall - 2}
+                  color={apt.status === 'pending' ? '#FFFFFF' : colors.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       />
