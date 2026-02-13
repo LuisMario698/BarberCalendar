@@ -10,20 +10,24 @@ import { Alert, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TextI
 
 
 
-const timeSlots = [
-    { time: '09:00', period: 'AM' },
-    { time: '10:00', period: 'AM' },
-    { time: '11:00', period: 'AM' },
-    { time: '12:00', period: 'PM' },
-    { time: '01:00', period: 'PM' },
-    { time: '02:00', period: 'PM' },
-    { time: '03:00', period: 'PM' },
-    { time: '04:00', period: 'PM' },
-    { time: '05:00', period: 'PM' },
-    { time: '06:00', period: 'PM' },
-    { time: '07:00', period: 'PM' },
-    { time: '08:00', period: 'PM' },
-];
+const generateTimeSlots = (showHalfHours: boolean) => {
+    const slots = [];
+    const startHour = 9; // 9 AM
+    const endHour = 20; // 8 PM
+
+    for (let h = startHour; h <= endHour; h++) {
+        const period = h < 12 ? 'AM' : 'PM';
+        const displayHour = h > 12 ? h - 12 : h;
+        const hourStr = displayHour < 10 ? `0${displayHour}` : `${displayHour}`;
+
+        slots.push({ time: `${hourStr}:00`, period });
+
+        if (showHalfHours && h !== endHour) { // Don't add 08:30 PM if strictly closing at 8
+            slots.push({ time: `${hourStr}:30`, period });
+        }
+    }
+    return slots;
+};
 
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
@@ -36,7 +40,10 @@ export default function BookScreen() {
     const [selectedService, setSelectedService] = useState<number | null>(null);
     const [selectedDay, setSelectedDay] = useState<string>(days[0]);
     const [selectedTime, setSelectedTime] = useState<{ time: string; period: string } | null>(null);
+    const [showHalfHours, setShowHalfHours] = useState(false);
     const [clientName, setClientName] = useState('');
+
+    const timeSlots = React.useMemo(() => generateTimeSlots(showHalfHours), [showHalfHours]);
     const [serviceName, setServiceName] = useState('');
     const [price, setPrice] = useState('');
 
@@ -224,9 +231,19 @@ export default function BookScreen() {
 
                 {/* Time Selection */}
                 <View style={[styles.section, { gap: r.spacing.md }]}>
-                    <ThemedText style={[styles.sectionTitle, { color: colors.text, fontSize: r.fontSm }]}>
-                        HORA
-                    </ThemedText>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <ThemedText style={[styles.sectionTitle, { color: colors.text, fontSize: r.fontSm }]}>
+                            HORA
+                        </ThemedText>
+                        <TouchableOpacity
+                            onPress={() => setShowHalfHours(!showHalfHours)}
+                            style={{ padding: 4 }}
+                        >
+                            <ThemedText style={{ color: colors.tint, fontSize: r.fontXs, fontWeight: '600' }}>
+                                {showHalfHours ? 'Ocultar horas medias' : 'Mostrar horas medias'}
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </View>
 
                     {/* Morning Slots */}
                     <ThemedText style={[styles.subsectionTitle, { color: colors.text, fontSize: r.fontXs, fontWeight: '600', opacity: 0.7 }]}>

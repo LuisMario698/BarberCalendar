@@ -32,7 +32,15 @@ export function useServices() {
             }
 
             if (data) {
-                setServices(data as Service[]);
+                // Temporary override for new prices requested by user
+                const updatedServices = (data as Service[]).map(s => {
+                    const name = s.name.toLowerCase();
+                    if (name.includes('corte') && name.includes('barba')) return { ...s, price: 250 };
+                    if (name === 'corte adulto') return { ...s, price: 180 };
+                    if (name === 'corte niño' || name === 'corte nino') return { ...s, price: 150 };
+                    return s;
+                });
+                setServices(updatedServices);
             }
         } catch (e) {
             console.error('Error loading services:', e);

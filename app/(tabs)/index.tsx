@@ -13,7 +13,30 @@ export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const { colors, isDark } = useAppTheme();
   const { appointments, toggleStatus, deleteAppointment } = useAppointments();
-  const [selectedDate, setSelectedDate] = React.useState('Lunes');
+
+  // Get current day
+  const getCurrentDay = () => {
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const dayIndex = new Date().getDay();
+    // If Sunday (0) and not in our list (index includes Mon-Sat), usually we default to Monday or keep Sunday if supported.
+    // For now, map correctly.
+    const day = days[dayIndex];
+    // Fallback to Lunes if for some reason it's not valid or if we want to skip Sunday if not in business days.
+    // However, user asked for "today".
+    return day === 'Domingo' ? 'Lunes' : day; // Assuming Domingo is closed/not in list for now based on 'dates' array below, unless modified.
+    // Actually, let's look at the dates array in line 22: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+    // If I return 'Domingo', it won't match any chip. I will default 'Domingo' to 'Lunes' to avoid confusing UI, or I should add Domingo to the list.
+    // Given the user prompt didn't explicitly ask to add Sunday, but to select "today", I'll assume standard business days.
+    // But wait, if today is Thursday, they want Thursday.
+    // I will use a simple map.
+  };
+
+  const [selectedDate, setSelectedDate] = React.useState(() => {
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const today = days[new Date().getDay()];
+    // If today is Sunday and not in list, default to Lunes, else today.
+    return today === 'Domingo' ? 'Lunes' : today;
+  });
   const r = useResponsive();
 
   const filteredAppointments = appointments.filter(apt => apt.date === selectedDate);

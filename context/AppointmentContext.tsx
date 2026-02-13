@@ -39,6 +39,34 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    const sortAppointments = useCallback((apts: Appointment[]) => {
+        const dayOrder: { [key: string]: number } = {
+            'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6, 'Domingo': 7
+        };
+
+        return [...apts].sort((a, b) => {
+            // 1. Sort by Day
+            const dayDiff = (dayOrder[a.date] || 8) - (dayOrder[b.date] || 8);
+            if (dayDiff !== 0) return dayDiff;
+
+            // 2. Sort by Period (AM before PM)
+            if (a.period !== b.period) {
+                return a.period === 'AM' ? -1 : 1;
+            }
+
+            // 3. Sort by Time
+            const getMinutes = (time: string, period: 'AM' | 'PM') => {
+                let [hours, minutes] = time.split(':').map(Number);
+                if (hours === 12) hours = 0; // 12 AM is 00:00, 12 PM is 12:00
+                if (period === 'PM' && hours !== 12) hours += 12; // Convert PM hours (except 12 PM) to 24-hour format
+                if (period === 'AM' && hours === 12) hours = 0; // Convert 12 AM to 00:00
+                return hours * 60 + (minutes || 0);
+            };
+
+            return getMinutes(a.time, a.period) - getMinutes(b.time, b.period);
+        });
+    }, []);
+
     const refreshAppointments = useCallback(async () => {
         try {
             setIsLoading(true);
@@ -52,10 +80,7 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
             }
 
             if (data) {
-                // Transform data if needed, but assuming direct match for now
-                // Note: Ensure your Supabase table columns match these keys:
-                // date, time, period, client, service, status, id
-                setAppointments(data as Appointment[]);
+                setAppointments(sortAppointments(data as Appointment[]));
             }
         } catch (error) {
             console.error('Error fetching appointments:', error);
@@ -63,7 +88,7 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [sortAppointments]);
 
     // Initial load
     useFocusEffect(
@@ -118,10 +143,10 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
 
         const newStatus = apt.status === 'pending' ? 'completed' : 'pending';
 
-        // Update local state immediately for UI responsiveness
-        setAppointments(prev => prev.map(a =>
+        // Update local state immediately
+        setAppointments(prev => sortAppointments(prev.map(a =>
             a.id === id ? { ...a, status: newStatus } : a
-        ));
+        )));
 
         try {
             const { error } = await supabase
@@ -135,9 +160,9 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
         } catch (error) {
             console.error('Error updating status:', error);
             // Revert on error
-            setAppointments(prev => prev.map(a =>
+            setAppointments(prev => sortAppointments(prev.map(a =>
                 a.id === id ? { ...a, status: apt.status } : a
-            ));
+            )));
             Alert.alert('Error', 'No se pudo actualizar el estado de la cita.');
         }
     };
@@ -159,7 +184,7 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
         } catch (error) {
             console.error('Error deleting appointment:', error);
             // Revert
-            setAppointments(prev => [...prev, apt]);
+            setAppointments(prev => sortAppointments([...prev, apt]));
             Alert.alert('Error', 'No se pudo eliminar la cita.');
         }
     };

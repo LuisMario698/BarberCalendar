@@ -9,7 +9,11 @@ import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpa
 export default function CalendarScreen() {
     const { colors, isDark } = useAppTheme();
     const { appointments } = useAppointments();
-    const [expandedDay, setExpandedDay] = React.useState<string | null>(null);
+    const [expandedDay, setExpandedDay] = React.useState<string | null>(() => {
+        const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const today = days[new Date().getDay()];
+        return today === 'Domingo' ? null : today;
+    });
     const r = useResponsive();
 
     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
