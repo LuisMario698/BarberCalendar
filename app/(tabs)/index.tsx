@@ -64,31 +64,28 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Next Appointment Card */}
-      {nextAppointment ? (
-        <View
-          style={[
-            styles.featuredCard,
-            {
-              backgroundColor: '#000000',
-              borderColor: colors.tint,
-              borderWidth: 1,
-              borderRadius: r.radius.xl,
-              marginBottom: r.spacing.xxl,
-              height: r.verticalScale(250),
-              overflow: 'hidden',
-            }
-          ]}
+      {/* Logo Card - Always Visible */}
+      <View
+        style={[
+          styles.featuredCard,
+          {
+            backgroundColor: '#000000',
+            borderColor: colors.tint,
+            borderWidth: 1,
+            borderRadius: r.radius.xl,
+            marginBottom: r.spacing.xxl,
+            height: r.verticalScale(250),
+            overflow: 'hidden',
+          }
+        ]}
+      >
+        <ImageBackground
+          source={require('../../assets/logoBarber.png')}
+          style={styles.bannerBackground}
+          imageStyle={{ opacity: 0.85, resizeMode: 'cover' }}
         >
-          {/* Logo Background */}
-          <ImageBackground
-            source={require('../../assets/logoBarber.png')}
-            style={styles.bannerBackground}
-            imageStyle={{ opacity: 0.85, resizeMode: 'cover' }}
-          >
-            {/* Gradient overlay for text readability */}
+          {nextAppointment ? (
             <View style={styles.bannerGradient}>
-              {/* Content */}
               <View style={styles.bannerContent}>
                 <View style={styles.bannerTop}>
                   <View style={[styles.statusBadge, { backgroundColor: colors.tint }]}>
@@ -115,16 +112,15 @@ export default function HomeScreen() {
                 </View>
               </View>
             </View>
-          </ImageBackground>
-        </View>
-      ) : (
-        <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border, padding: r.moderateScale(40), borderRadius: r.radius.xl, marginBottom: r.spacing.xxl }]}>
-          <IconSymbol name="calendar" size={r.iconXLarge} color={colors.textMuted} />
-          <ThemedText style={[styles.emptyText, { color: colors.textMuted, fontSize: r.fontMd }]}>
-            No hay citas pendientes
-          </ThemedText>
-        </View>
-      )}
+          ) : (
+            <View style={[styles.bannerGradient, { justifyContent: 'center', alignItems: 'center' }]}>
+              <ThemedText style={[styles.emptyText, { color: '#FFFFFF', fontSize: r.fontMd, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }]}>
+                No hay citas pendientes
+              </ThemedText>
+            </View>
+          )}
+        </ImageBackground>
+      </View>
 
       {/* Day Selector */}
       <ScrollView

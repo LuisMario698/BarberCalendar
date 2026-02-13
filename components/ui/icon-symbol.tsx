@@ -29,6 +29,9 @@ const MAPPING = {
   'plus.circle.fill': 'add-circle',
   'chart.bar.fill': 'poll',
   'checkmark.circle.fill': 'check-circle',
+  'checkmark.circle': 'check-circle',
+  'chart.line.uptrend.xyaxis': 'trending-up',
+  'dollarsign.circle': 'attach-money',
 } as IconMapping;
 
 /**

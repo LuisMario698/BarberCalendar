@@ -11,21 +11,20 @@ export default function RevenueScreen() {
     const { appointments } = useAppointments();
     const r = useResponsive();
 
-    // Calculate earnings per day
+    // Calculate earnings per day (only completed appointments count as revenue)
     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const dayMap: Record<string, number> = { 'Lunes': 0, 'Martes': 1, 'Miércoles': 2, 'Jueves': 3, 'Viernes': 4, 'Sábado': 5 };
     const earningsPerDay = [0, 0, 0, 0, 0, 0];
+    const pendingPerDay = [0, 0, 0, 0, 0, 0];
 
     appointments.forEach(apt => {
-        let price = 0;
-        if (apt.service.includes('Adulto')) price = 250;
-        else if (apt.service.includes('Niño')) price = 150;
-        else if (apt.service.includes('Barba')) price = 150;
-        else price = 200;
-
         const dayIndex = dayMap[apt.date];
         if (dayIndex !== undefined) {
-            earningsPerDay[dayIndex] += price;
+            if (apt.status === 'completed') {
+                earningsPerDay[dayIndex] += apt.price;
+            } else {
+                pendingPerDay[dayIndex] += apt.price;
+            }
         }
     });
 
@@ -35,11 +34,14 @@ export default function RevenueScreen() {
     };
 
     const totalEarnings = earningsPerDay.reduce((a, b) => a + b, 0);
+    const totalPending = pendingPerDay.reduce((a, b) => a + b, 0);
     const maxEarnings = Math.max(...earningsPerDay);
     const busiestDayIndex = earningsPerDay.indexOf(maxEarnings);
-    const busiestDay = days[busiestDayIndex];
+    const busiestDay = maxEarnings > 0 ? days[busiestDayIndex] : '—';
     const totalAppointments = appointments.length;
     const completedAppointments = appointments.filter(a => a.status === 'completed').length;
+    const pendingAppointments = appointments.filter(a => a.status === 'pending').length;
+    const avgPerAppointment = completedAppointments > 0 ? Math.round(totalEarnings / completedAppointments) : 0;
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -61,22 +63,29 @@ export default function RevenueScreen() {
             >
                 {/* Main Revenue Card */}
                 <View style={[styles.mainCard, { backgroundColor: colors.tint, borderRadius: r.radius.xl, padding: r.spacing.xxl }]}>
-                    <ThemedText style={[styles.mainCardLabel, { fontSize: r.fontSm }]}>Total de la semana</ThemedText>
+                    <ThemedText style={[styles.mainCardLabel, { fontSize: r.fontSm }]}>Ganado esta semana</ThemedText>
                     <ThemedText style={[styles.mainCardAmount, { fontSize: r.moderateScale(40) }]}>${totalEarnings.toLocaleString()}</ThemedText>
                     <View style={[styles.mainCardFooter, { gap: r.spacing.lg, marginTop: r.spacing.sm }]}>
-                        <View style={[styles.mainCardStat, { gap: r.spacing.xs + 2 }]}>
-                            <IconSymbol name="calendar" size={r.iconSmall - 2} color="rgba(255,255,255,0.8)" />
-                            <ThemedText style={[styles.mainCardStatText, { fontSize: r.fontSm }]}>
-                                {totalAppointments} citas
-                            </ThemedText>
-                        </View>
                         <View style={[styles.mainCardStat, { gap: r.spacing.xs + 2 }]}>
                             <IconSymbol name="checkmark.circle" size={r.iconSmall - 2} color="rgba(255,255,255,0.8)" />
                             <ThemedText style={[styles.mainCardStatText, { fontSize: r.fontSm }]}>
                                 {completedAppointments} completadas
                             </ThemedText>
                         </View>
+                        <View style={[styles.mainCardStat, { gap: r.spacing.xs + 2 }]}>
+                            <IconSymbol name="calendar" size={r.iconSmall - 2} color="rgba(255,255,255,0.8)" />
+                            <ThemedText style={[styles.mainCardStatText, { fontSize: r.fontSm }]}>
+                                {pendingAppointments} pendientes
+                            </ThemedText>
+                        </View>
                     </View>
+                    {totalPending > 0 && (
+                        <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: r.radius.md, padding: r.spacing.md, marginTop: r.spacing.md }}>
+                            <ThemedText style={{ color: '#FFFFFF', fontSize: r.fontSm, fontWeight: '600' }}>
+                                ${totalPending.toLocaleString()} por cobrar
+                            </ThemedText>
+                        </View>
+                    )}
                 </View>
 
                 {/* Stats Row */}
@@ -93,10 +102,10 @@ export default function RevenueScreen() {
                     <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border, padding: r.spacing.lg, borderRadius: r.radius.md + 2, gap: r.spacing.sm + 2 }]}>
                         <IconSymbol name="dollarsign.circle" size={r.iconMedium} color={colors.tint} />
                         <ThemedText style={[styles.statLabel, { color: colors.textSecondary, fontSize: r.fontXs }]}>
-                            Mayor ingreso
+                            Promedio por cita
                         </ThemedText>
                         <ThemedText style={[styles.statValue, { color: colors.text, fontSize: r.fontLg }]}>
-                            ${maxEarnings}
+                            ${avgPerAppointment}
                         </ThemedText>
                     </View>
                 </View>
