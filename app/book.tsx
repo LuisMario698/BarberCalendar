@@ -46,6 +46,7 @@ export default function BookScreen() {
     const timeSlots = React.useMemo(() => generateTimeSlots(showHalfHours), [showHalfHours]);
     const [serviceName, setServiceName] = useState('');
     const [price, setPrice] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
 
     const handleSelectService = (s: { id: number; name: string; price: number }) => {
         setSelectedService(s.id);
@@ -54,8 +55,9 @@ export default function BookScreen() {
     };
 
     const handleSave = async () => {
-        if (!selectedService || !selectedTime) return;
+        if (!selectedService || !selectedTime || isSaving) return;
 
+        setIsSaving(true);
         try {
             const success = await addAppointment({
                 date: selectedDay,
@@ -74,10 +76,12 @@ export default function BookScreen() {
         } catch (error) {
             console.error(error);
             Alert.alert('Error', 'No se pudo guardar la cita.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const isValid = selectedService && selectedTime;
+    const isValid = selectedService && selectedTime && !isSaving;
 
     // Calculate widths for grids
     const serviceCardWidth = (r.screenWidth - (r.screenPadding * 2) - r.spacing.sm - 2) / 2;
@@ -332,7 +336,7 @@ export default function BookScreen() {
                     disabled={!isValid}
                 >
                     <ThemedText style={[styles.saveButtonText, { color: isValid ? '#FFFFFF' : colors.textMuted, fontSize: r.fontMd }]}>
-                        Guardar Cita
+                        {isSaving ? 'Guardando...' : 'Guardar Cita'}
                     </ThemedText>
                 </TouchableOpacity>
             </View>
