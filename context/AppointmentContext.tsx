@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 
 export type Appointment = {
     id: number;
@@ -156,11 +156,29 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
             if (apt.period === 'AM' && h === 12) h = 0;
             targetDate.setHours(h, m || 0, 0, 0);
 
+            const startTimeISO = targetDate.toISOString();
+
+            // Check for duplicate directly in Supabase (most reliable)
+            const { data: existing } = await supabase
+                .from('appointments')
+                .select('id')
+                .eq('start_time', startTimeISO)
+                .limit(1);
+
+            if (existing && existing.length > 0) {
+                if (Platform.OS === 'web') {
+                    window.alert('Ya existe una cita programada para este horario.');
+                } else {
+                    Alert.alert('Horario Ocupado', 'Ya existe una cita programada para este horario.');
+                }
+                return false;
+            }
+
             const { error } = await supabase.from('appointments').insert([{
-                start_time: targetDate.toISOString(),
-                date: apt.date, // Save legacy field too for safety
-                time: apt.time, // Save legacy field
-                period: apt.period, // Save legacy
+                start_time: startTimeISO,
+                date: apt.date,
+                time: apt.time,
+                period: apt.period,
                 client: apt.client,
                 service: apt.service,
                 price: apt.price,
@@ -172,7 +190,11 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
             return true;
         } catch (error) {
             console.error('Error adding appointment:', error);
-            Alert.alert('Error', 'No se pudo guardar la cita.');
+            if (Platform.OS === 'web') {
+                window.alert('No se pudo guardar la cita.');
+            } else {
+                Alert.alert('Error', 'No se pudo guardar la cita.');
+            }
             return false;
         }
     };

@@ -40,7 +40,6 @@ const MAPPING = {
   'clock.fill': 'schedule',
   'clock': 'schedule',
   'cloud.fill': 'cloud',
-  'house.fill': 'home',
 } as IconMapping;
 
 /**
