@@ -28,7 +28,6 @@ export default function RevenueScreen() {
         end.setDate(start.getDate() + 6);
         end.setHours(23, 59, 59, 999);
 
-        // Format Label
         const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
         const label = `${start.toLocaleDateString('es-ES', options)} - ${end.toLocaleDateString('es-ES', options)}`;
 
@@ -161,7 +160,7 @@ export default function RevenueScreen() {
                     <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border, padding: r.spacing.lg, borderRadius: r.radius.md + 2, gap: r.spacing.sm + 2 }]}>
                         <IconSymbol name="dollarsign.circle" size={r.iconMedium} color={colors.tint} />
                         <ThemedText style={[styles.statLabel, { color: colors.textSecondary, fontSize: r.fontXs }]}>
-                            Promedio por cita
+                            Promedio
                         </ThemedText>
                         <ThemedText style={[styles.statValue, { color: colors.text, fontSize: r.fontLg }]}>
                             ${avgPerAppointment}
