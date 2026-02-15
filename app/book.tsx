@@ -57,8 +57,26 @@ export default function BookScreen() {
         if (!selectedService || !selectedTime) return;
 
         try {
+            // Calculate ISO Date
+            const dayMap: { [key: string]: number } = { 'Domingo': 0, 'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6 };
+            const targetDayIndex = dayMap[selectedDay];
+            const today = new Date();
+            const currentDayIndex = today.getDay();
+
+            let diff = targetDayIndex - currentDayIndex;
+            // If the day is earlier in the week than today, assume it's for NEXT week? 
+            // Or assume valid "This Week"?
+            // If I am on Friday and click Monday, I probably mean NEXT Monday? 
+            // Or if I am on Monday and click Monday, I mean Today.
+            if (diff < 0) diff += 7;
+
+            const targetDate = new Date(today);
+            targetDate.setDate(today.getDate() + diff);
+            const isoParams = targetDate.toISOString().split('T')[0];
+
             const success = await addAppointment({
                 date: selectedDay,
+                isoDate: isoParams,
                 time: selectedTime.time,
                 period: selectedTime.period as 'AM' | 'PM',
                 client: clientName.trim() || 'Cliente',

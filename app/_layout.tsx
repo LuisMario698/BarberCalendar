@@ -10,9 +10,9 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-// import { initDatabase } from '@/db/init';
 import { AppointmentProvider } from '@/context/AppointmentContext';
 import { AppThemeProvider } from '@/context/ThemeContext';
+import { initDatabase } from '@/db/init';
 import { useEffect } from 'react';
 // import { checkAndResetWeek } from '@/db/reset-week';
 
@@ -20,8 +20,10 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    // initDatabase();
-    // checkAndResetWeek();
+    if (Platform.OS !== 'web') {
+      initDatabase();
+      // checkAndResetWeek();
+    }
   }, []);
 
   return (

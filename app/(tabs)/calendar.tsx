@@ -14,6 +14,7 @@ export default function CalendarScreen() {
         const today = days[new Date().getDay()];
         return today === 'Domingo' ? null : today;
     });
+
     const r = useResponsive();
 
     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -28,12 +29,14 @@ export default function CalendarScreen() {
 
             {/* Header */}
             <View style={[styles.header, { paddingHorizontal: r.screenPadding }]}>
-                <ThemedText style={[styles.title, { color: colors.text, fontSize: r.fontXxl }]}>
-                    Calendario
-                </ThemedText>
-                <ThemedText style={[styles.subtitle, { color: colors.textSecondary, fontSize: r.fontSm }]}>
-                    Vista semanal
-                </ThemedText>
+                <View>
+                    <ThemedText style={[styles.title, { color: colors.text, fontSize: r.fontXxl }]}>
+                        Calendario
+                    </ThemedText>
+                    <ThemedText style={[styles.subtitle, { color: colors.textSecondary, fontSize: r.fontSm }]}>
+                        Gestiona tus citas
+                    </ThemedText>
+                </View>
             </View>
 
             <ScrollView
@@ -136,6 +139,17 @@ const styles = StyleSheet.create({
     header: {
         paddingTop: 16,
         paddingBottom: 20,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    modeButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
     },
     title: {
         fontWeight: '700',

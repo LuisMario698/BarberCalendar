@@ -3,7 +3,8 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAppointments } from '@/context/AppointmentContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useResponsive } from '@/hooks/use-responsive';
-import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 
 export default function RevenueScreen() {
@@ -11,37 +12,85 @@ export default function RevenueScreen() {
     const { appointments } = useAppointments();
     const r = useResponsive();
 
-    // Calculate earnings per day (only completed appointments count as revenue)
-    const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    const dayMap: Record<string, number> = { 'Lunes': 0, 'Martes': 1, 'Miércoles': 2, 'Jueves': 3, 'Viernes': 4, 'Sábado': 5 };
-    const earningsPerDay = [0, 0, 0, 0, 0, 0];
-    const pendingPerDay = [0, 0, 0, 0, 0, 0];
+    const [weekOffset, setWeekOffset] = useState(0);
 
-    appointments.forEach(apt => {
-        const dayIndex = dayMap[apt.date];
-        if (dayIndex !== undefined) {
+    // Calculate Week Dates
+    const { weekStart, weekEnd, weekLabel } = useMemo(() => {
+        const now = new Date();
+        // Adjust to previous Monday
+        const day = now.getDay();
+        const diff = now.getDate() - day + (day === 0 ? -6 : 1) + (weekOffset * 7); // Monday
+
+        const start = new Date(now.setDate(diff));
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        end.setHours(23, 59, 59, 999);
+
+        // Format Label
+        const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+        const label = `${start.toLocaleDateString('es-ES', options)} - ${end.toLocaleDateString('es-ES', options)}`;
+
+        return { weekStart: start, weekEnd: end, weekLabel: label };
+    }, [weekOffset]);
+
+    // Filter Earnings
+    const { earningsPerDay, totalEarnings, completedAppointments, pendingAppointments, busiestDay, totalPending, avgPerAppointment } = useMemo(() => {
+        const earnings = [0, 0, 0, 0, 0, 0, 0]; // Mon-Sun
+        const pending = [0, 0, 0, 0, 0, 0, 0];
+        let completed = 0;
+        let pends = 0;
+
+        const filtered = appointments.filter(apt => {
+            if (!apt.isoDate) return false;
+            const d = new Date(apt.isoDate + 'T00:00:00'); // Ensure local/consistent parsing
+            return d >= weekStart && d <= weekEnd;
+        });
+
+        filtered.forEach(apt => {
+            const d = new Date(apt.isoDate + 'T00:00:00');
+            // getDay: 0=Sun, 1=Mon. Map to 0=Mon, 6=Sun
+            let idx = d.getDay() - 1;
+            if (idx === -1) idx = 6;
+
             if (apt.status === 'completed') {
-                earningsPerDay[dayIndex] += apt.price;
+                earnings[idx] += apt.price;
+                completed++;
             } else {
-                pendingPerDay[dayIndex] += apt.price;
+                pending[idx] += apt.price;
+                pends++;
             }
-        }
-    });
+        });
 
+        const totalEarn = earnings.reduce((a, b) => a + b, 0);
+        const totalPend = pending.reduce((a, b) => a + b, 0);
+
+        const maxE = Math.max(...earnings);
+        const maxIdx = earnings.indexOf(maxE);
+        const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        const busyDay = maxE > 0 ? days[maxIdx] : '—';
+        const avg = completed > 0 ? Math.round(totalEarn / completed) : 0;
+
+        return {
+            earningsPerDay: earnings,
+            totalEarnings: totalEarn,
+            completedAppointments: completed,
+            pendingAppointments: pends,
+            busiestDay: busyDay,
+            totalPending: totalPend,
+            avgPerAppointment: avg
+        };
+    }, [appointments, weekStart, weekEnd]);
+
+    // Chart Data (Mon-Sun -> display Mon-Sat usually? Barber shop usually closed Sunday?)
+    // User requested "diferentes semanas". Assuming Mon-Sat or Mon-Sun.
+    // Let's show Mon-Sat for cleaner UI if Sunday is empty? Or all 7?
+    // User schema had Sunday closed.
     const weeklyData = {
-        labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'],
-        datasets: [{ data: earningsPerDay.map(e => e || 0) }],
+        labels: ['L', 'M', 'M', 'J', 'V', 'S'],
+        datasets: [{ data: earningsPerDay.slice(0, 6) }], // Show Mon-Sat
     };
-
-    const totalEarnings = earningsPerDay.reduce((a, b) => a + b, 0);
-    const totalPending = pendingPerDay.reduce((a, b) => a + b, 0);
-    const maxEarnings = Math.max(...earningsPerDay);
-    const busiestDayIndex = earningsPerDay.indexOf(maxEarnings);
-    const busiestDay = maxEarnings > 0 ? days[busiestDayIndex] : '—';
-    const totalAppointments = appointments.length;
-    const completedAppointments = appointments.filter(a => a.status === 'completed').length;
-    const pendingAppointments = appointments.filter(a => a.status === 'pending').length;
-    const avgPerAppointment = completedAppointments > 0 ? Math.round(totalEarnings / completedAppointments) : 0;
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -52,9 +101,19 @@ export default function RevenueScreen() {
                 <ThemedText style={[styles.title, { color: colors.text, fontSize: r.fontXxl }]}>
                     Ganancias
                 </ThemedText>
-                <ThemedText style={[styles.subtitle, { color: colors.textSecondary, fontSize: r.fontSm }]}>
-                    Resumen semanal
-                </ThemedText>
+
+                {/* Week Selector */}
+                <View style={[styles.weekSelector, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: r.radius.lg }]}>
+                    <TouchableOpacity onPress={() => setWeekOffset(p => p - 1)} style={styles.arrowButton}>
+                        <IconSymbol name="chevron.left" size={20} color={colors.text} />
+                    </TouchableOpacity>
+                    <ThemedText style={[styles.weekLabel, { color: colors.text, fontSize: r.fontSm }]}>
+                        {weekLabel}
+                    </ThemedText>
+                    <TouchableOpacity onPress={() => setWeekOffset(p => p + 1)} style={styles.arrowButton}>
+                        <IconSymbol name="chevron.right" size={20} color={colors.text} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView
@@ -159,18 +218,24 @@ const styles = StyleSheet.create({
     header: {
         paddingTop: 16,
         paddingBottom: 20,
+        gap: 16,
     },
     title: {
         fontWeight: '700',
-        letterSpacing: -0.5,
-        marginBottom: 2,
-        lineHeight: 36,
-        includeFontPadding: false,
     },
-    subtitle: {
-        fontWeight: '500',
-        lineHeight: 20,
-        includeFontPadding: false,
+    weekSelector: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 8,
+        paddingVertical: 8,
+        borderWidth: 1,
+    },
+    arrowButton: {
+        padding: 8,
+    },
+    weekLabel: {
+        fontWeight: '600',
     },
     scrollContent: {
         paddingBottom: 40,
@@ -183,15 +248,10 @@ const styles = StyleSheet.create({
     mainCardLabel: {
         color: 'rgba(255,255,255,0.8)',
         fontWeight: '500',
-        lineHeight: 20,
-        includeFontPadding: false,
     },
     mainCardAmount: {
         fontWeight: '700',
         color: '#FFFFFF',
-        letterSpacing: -1,
-        lineHeight: 48,
-        includeFontPadding: false,
     },
     mainCardFooter: {
         flexDirection: 'row',
@@ -203,8 +263,6 @@ const styles = StyleSheet.create({
     mainCardStatText: {
         color: 'rgba(255,255,255,0.8)',
         fontWeight: '500',
-        lineHeight: 18,
-        includeFontPadding: false,
     },
 
     // Stats Row
@@ -217,21 +275,15 @@ const styles = StyleSheet.create({
     },
     statLabel: {
         fontWeight: '500',
-        lineHeight: 16,
-        includeFontPadding: false,
     },
     statValue: {
         fontWeight: '700',
-        lineHeight: 24,
-        includeFontPadding: false,
     },
 
     // Chart Section
     chartSection: {},
     sectionTitle: {
         fontWeight: '600',
-        lineHeight: 22,
-        includeFontPadding: false,
     },
     chartCard: {
         borderWidth: 1,

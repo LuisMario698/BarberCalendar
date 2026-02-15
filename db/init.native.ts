@@ -1,8 +1,18 @@
 import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 
-export const db = SQLite.openDatabaseSync('barber.db');
+// Open DB only on native
+let db: SQLite.SQLiteDatabase | null = null;
+
+if (Platform.OS !== 'web') {
+  db = SQLite.openDatabaseSync('barber.db');
+}
+
+export { db };
 
 export const initDatabase = () => {
+  if (Platform.OS === 'web' || !db) return;
+
   try {
     // Services Table
     db.execSync(`
@@ -62,6 +72,7 @@ export const initDatabase = () => {
 };
 
 const seedData = () => {
+  if (!db) return;
   try {
     // Clear existing services
     db.runSync('DELETE FROM services');

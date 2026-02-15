@@ -270,18 +270,24 @@ export default function HomeScreen() {
                     }
                   ]}
                   onPress={() => {
-                    Alert.alert(
-                      'Eliminar Cita',
-                      '¿Estás seguro de que deseas eliminar esta cita permanentemente?',
-                      [
-                        { text: 'Cancelar', style: 'cancel' },
-                        {
-                          text: 'Eliminar',
-                          style: 'destructive',
-                          onPress: () => deleteAppointment(apt.id)
-                        }
-                      ]
-                    );
+                    if (Platform.OS === 'web') {
+                      if (window.confirm('¿Estás seguro de que deseas eliminar esta cita permanentemente?')) {
+                        deleteAppointment(apt.id);
+                      }
+                    } else {
+                      Alert.alert(
+                        'Eliminar Cita',
+                        '¿Estás seguro de que deseas eliminar esta cita permanentemente?',
+                        [
+                          { text: 'Cancelar', style: 'cancel' },
+                          {
+                            text: 'Eliminar',
+                            style: 'destructive',
+                            onPress: () => deleteAppointment(apt.id)
+                          }
+                        ]
+                      );
+                    }
                   }}
                 >
                   <IconSymbol name="trash" size={r.iconSmall - 4} color={colors.error} />
