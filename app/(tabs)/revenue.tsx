@@ -14,18 +14,17 @@ export default function RevenueScreen() {
 
     const [weekOffset, setWeekOffset] = useState(0);
 
-    // Calculate Week Dates
+    // Calculate Week Dates (Sunday to Saturday)
     const { weekStart, weekEnd, weekLabel } = useMemo(() => {
         const now = new Date();
-        // Adjust to previous Monday
-        const day = now.getDay();
-        const diff = now.getDate() - day + (day === 0 ? -6 : 1) + (weekOffset * 7); // Monday
+        const day = now.getDay(); // 0=Sun, 6=Sat
+        const diff = now.getDate() - day + (weekOffset * 7); // Sunday
 
-        const start = new Date(now.setDate(diff));
+        const start = new Date(now.getFullYear(), now.getMonth(), diff);
         start.setHours(0, 0, 0, 0);
 
         const end = new Date(start);
-        end.setDate(start.getDate() + 6);
+        end.setDate(start.getDate() + 6); // Saturday
         end.setHours(23, 59, 59, 999);
 
         const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
@@ -36,22 +35,21 @@ export default function RevenueScreen() {
 
     // Filter Earnings
     const { earningsPerDay, totalEarnings, completedAppointments, pendingAppointments, busiestDay, totalPending, avgPerAppointment } = useMemo(() => {
-        const earnings = [0, 0, 0, 0, 0, 0, 0]; // Mon-Sun
+        // Index: 0=Dom, 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sáb
+        const earnings = [0, 0, 0, 0, 0, 0, 0];
         const pending = [0, 0, 0, 0, 0, 0, 0];
         let completed = 0;
         let pends = 0;
 
         const filtered = appointments.filter(apt => {
             if (!apt.isoDate) return false;
-            const d = new Date(apt.isoDate + 'T00:00:00'); // Ensure local/consistent parsing
+            const d = new Date(apt.isoDate + 'T00:00:00');
             return d >= weekStart && d <= weekEnd;
         });
 
         filtered.forEach(apt => {
             const d = new Date(apt.isoDate + 'T00:00:00');
-            // getDay: 0=Sun, 1=Mon. Map to 0=Mon, 6=Sun
-            let idx = d.getDay() - 1;
-            if (idx === -1) idx = 6;
+            const idx = d.getDay(); // 0=Dom, 1=Lun, ..., 6=Sáb (matches week layout)
 
             if (apt.status === 'completed') {
                 earnings[idx] += apt.price;
@@ -67,8 +65,8 @@ export default function RevenueScreen() {
 
         const maxE = Math.max(...earnings);
         const maxIdx = earnings.indexOf(maxE);
-        const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-        const busyDay = maxE > 0 ? days[maxIdx] : '—';
+        const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const busyDay = maxE > 0 ? dayNames[maxIdx] : '—';
         const avg = completed > 0 ? Math.round(totalEarn / completed) : 0;
 
         return {
@@ -82,13 +80,10 @@ export default function RevenueScreen() {
         };
     }, [appointments, weekStart, weekEnd]);
 
-    // Chart Data (Mon-Sun -> display Mon-Sat usually? Barber shop usually closed Sunday?)
-    // User requested "diferentes semanas". Assuming Mon-Sat or Mon-Sun.
-    // Let's show Mon-Sat for cleaner UI if Sunday is empty? Or all 7?
-    // User schema had Sunday closed.
+    // Chart: Show Mon-Sat only (index 1-6, skip Sunday index 0)
     const weeklyData = {
         labels: ['L', 'M', 'M', 'J', 'V', 'S'],
-        datasets: [{ data: earningsPerDay.slice(0, 6) }], // Show Mon-Sat
+        datasets: [{ data: earningsPerDay.slice(1, 7) }],
     };
 
     return (
