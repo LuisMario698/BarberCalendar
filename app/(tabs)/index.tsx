@@ -28,7 +28,6 @@ export default function HomeScreen() {
     // If I return 'Domingo', it won't match any chip. I will default 'Domingo' to 'Lunes' to avoid confusing UI, or I should add Domingo to the list.
     // Given the user prompt didn't explicitly ask to add Sunday, but to select "today", I'll assume standard business days.
     // But wait, if today is Thursday, they want Thursday.
-    // I will use a simple map.
   };
 
   const [selectedDate, setSelectedDate] = React.useState(() => {
@@ -270,18 +269,24 @@ export default function HomeScreen() {
                     }
                   ]}
                   onPress={() => {
-                    Alert.alert(
-                      'Eliminar Cita',
-                      '¿Estás seguro de que deseas eliminar esta cita permanentemente?',
-                      [
-                        { text: 'Cancelar', style: 'cancel' },
-                        {
-                          text: 'Eliminar',
-                          style: 'destructive',
-                          onPress: () => deleteAppointment(apt.id)
-                        }
-                      ]
-                    );
+                    if (Platform.OS === 'web') {
+                      if (window.confirm('¿Estás seguro de que deseas eliminar esta cita permanentemente?')) {
+                        deleteAppointment(apt.id);
+                      }
+                    } else {
+                      Alert.alert(
+                        'Eliminar Cita',
+                        '¿Estás seguro de que deseas eliminar esta cita permanentemente?',
+                        [
+                          { text: 'Cancelar', style: 'cancel' },
+                          {
+                            text: 'Eliminar',
+                            style: 'destructive',
+                            onPress: () => deleteAppointment(apt.id)
+                          }
+                        ]
+                      );
+                    }
                   }}
                 >
                   <IconSymbol name="trash" size={r.iconSmall - 4} color={colors.error} />

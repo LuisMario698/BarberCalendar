@@ -32,6 +32,14 @@ const MAPPING = {
   'checkmark.circle': 'check-circle',
   'chart.line.uptrend.xyaxis': 'trending-up',
   'dollarsign.circle': 'attach-money',
+  'plus': 'add',
+  'trash': 'delete',
+  'checkmark': 'check',
+  'arrow.uturn.backward': 'undo',
+  'chevron.left': 'chevron-left',
+  'clock.fill': 'schedule',
+  'clock': 'schedule',
+  'cloud.fill': 'cloud',
 } as IconMapping;
 
 /**
