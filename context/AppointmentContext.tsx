@@ -43,26 +43,27 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
             'Lunes': 1, 'Martes': 2, 'Miércoles': 3, 'Jueves': 4, 'Viernes': 5, 'Sábado': 6, 'Domingo': 7
         };
 
+        const getMinutes = (time: string, period: 'AM' | 'PM') => {
+            let [hours, minutes] = time.split(':').map(Number);
+            // Convert 12-hour to 24-hour
+            if (period === 'AM' && hours === 12) hours = 0;      // 12:xx AM = 0:xx
+            else if (period === 'PM' && hours !== 12) hours += 12; // 1-11 PM = 13-23
+            // 12 PM stays as 12
+            return hours * 60 + (minutes || 0);
+        };
+
         return [...apts].sort((a, b) => {
-            // Sort by ISO Date first if available (for history)
+            // 1. Sort by ISO date if both have it
             if (a.isoDate && b.isoDate) {
-                if (a.isoDate !== b.isoDate) return a.isoDate.localeCompare(b.isoDate);
+                const dateCmp = a.isoDate.localeCompare(b.isoDate);
+                if (dateCmp !== 0) return dateCmp;
+            } else {
+                // Fallback: sort by day name for legacy data
+                const dayDiff = (dayOrder[a.date] || 8) - (dayOrder[b.date] || 8);
+                if (dayDiff !== 0) return dayDiff;
             }
 
-            // Fallback to Day Name sorting logic for weekly view compatibility
-            const dayDiff = (dayOrder[a.date] || 8) - (dayOrder[b.date] || 8);
-            if (dayDiff !== 0) return dayDiff;
-
-            if (a.period !== b.period) return a.period === 'AM' ? -1 : 1;
-
-            const getMinutes = (time: string, period: 'AM' | 'PM') => {
-                let [hours, minutes] = time.split(':').map(Number);
-                if (hours === 12) hours = 0;
-                if (period === 'PM' && hours !== 12) hours += 12;
-                if (period === 'AM' && hours === 12) hours = 0;
-                return hours * 60 + (minutes || 0);
-            };
-
+            // 2. Sort by time within the same day
             return getMinutes(a.time, a.period) - getMinutes(b.time, b.period);
         });
     }, []);
@@ -74,7 +75,7 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
             const { data: cloudData, error } = await supabase
                 .from('appointments')
                 .select('*')
-                .order('created_at', { ascending: false });
+                .order('start_time', { ascending: true });
 
             if (error) {
                 console.error("Cloud fetch failed:", error);
