@@ -130,7 +130,13 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
                     };
                 });
 
-                setAppointments(sortAppointments(mappedData));
+                const sorted = sortAppointments(mappedData);
+                console.log('📅 Appointments sorted chronologically:', sorted.map(a => ({
+                    date: a.isoDate || a.date,
+                    time: `${a.time} ${a.period}`,
+                    client: a.client
+                })));
+                setAppointments(sorted);
             }
         } catch (error) {
             console.error('Error fetching appointments:', error);
