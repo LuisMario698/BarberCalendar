@@ -74,7 +74,11 @@ export default function BookScreen() {
 
             const targetDate = new Date(today);
             targetDate.setDate(today.getDate() + diff);
-            const isoParams = targetDate.toISOString().split('T')[0];
+            // FIXED: Use local time components to avoid timezone shifts
+            const year = targetDate.getFullYear();
+            const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const day = String(targetDate.getDate()).padStart(2, '0');
+            const isoParams = `${year}-${month}-${day}`;
 
             const success = await addAppointment({
                 date: selectedDay,

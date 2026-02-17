@@ -154,14 +154,20 @@ export const AppointmentProvider = ({ children }: { children: ReactNode }) => {
     const addAppointment = async (apt: Omit<Appointment, 'id' | 'status'>): Promise<boolean> => {
         try {
             let targetDate = new Date();
+
             if (apt.isoDate) {
-                targetDate = new Date(apt.isoDate);
+                // FIXED: Parse YYYY-MM-DD components and create Local Date at midnight
+                // This ensures we start with the correct local day regardless of current time
+                const [y, m, d] = apt.isoDate.split('-').map(Number);
+                targetDate = new Date(y, m - 1, d); // Month is 0-indexed
             }
 
-            let [h, m] = apt.time.split(':').map(Number);
+            let [h, min] = apt.time.split(':').map(Number);
             if (apt.period === 'PM' && h !== 12) h += 12;
             if (apt.period === 'AM' && h === 12) h = 0;
-            targetDate.setHours(h, m || 0, 0, 0);
+
+            // setHours sets LOCAL time, which is what we want
+            targetDate.setHours(h, min || 0, 0, 0);
 
             const startTimeISO = targetDate.toISOString();
 
